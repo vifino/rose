@@ -1,0 +1,12 @@
+[package]
+name = "rose"
+version = "0.1.0"
+authors = ["Adrian Pistol <vifino@tty.sh>"]
+
+[dependencies]
+mem = { git = "https://github.com/vifino/rust-mem.git" }
+byteorder = "1.0.0"
+
+[[bin]]
+name = "zpu"
+path = "src/bin/zpu.rs"
