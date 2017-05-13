@@ -50,7 +50,7 @@ fn main() {
     // CPU
     let mut cpu = ZPU::new(membus);
 
-    loop {
+    for i in 0..2640 {
         cpu.step().unwrap();
     }
 }

@@ -1,5 +1,9 @@
 //! ZPU! Yay!
 
+// Quick tips:
+// - pop = sp + 4
+// - push = sp - 4
+
 extern crate mem;
 
 // Handy aliases
@@ -40,6 +44,7 @@ fn u2i32(v: u32) -> i32 {
     v as i32
 }
 
+#[inline(always)]
 fn bool2u32(v: bool) -> u32 {
     if v {
         return 1;
@@ -109,6 +114,7 @@ impl ZPU {
     }
 
     /// Stack push.
+    #[inline(always)]
     fn v_push(&mut self, val: u32) -> Result<(), mem::MemError> {
         let newsp = self.sp.wrapping_sub(4);
         self.set32(newsp, val)?;
@@ -118,6 +124,7 @@ impl ZPU {
     }
 
     /// Stack pop.
+    #[inline(always)]
     fn v_pop(&mut self) -> Result<u32, mem::MemError> {
         let v = self.get32(self.sp)?;
         println!("ZPU: Popped {:#X}", v);
@@ -332,40 +339,36 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
         },
         4 => { // LESSTHAN
             let tos = zpu.v_pop()?;
-            let nosp = sp.wrapping_sub(4);
-            let nos = zpu.get32(nosp)?;
-            zpu.set32(nosp, bool2u32(u2i32(tos) < u2i32(nos)))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(bool2u32(u2i32(tos) < u2i32(nos)))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         5 => { // LESSTHANEQUAL
             let tos = zpu.v_pop()?;
-            let nosp = sp.wrapping_sub(4);
-            let nos = zpu.get32(nosp)?;
-            zpu.set32(nosp, bool2u32(u2i32(tos) <= u2i32(nos)))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(bool2u32(u2i32(tos) <= u2i32(nos)))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         6 => { // ULESSTHAN
             let tos = zpu.v_pop()?;
-            let nosp = sp.wrapping_sub(4);
-            let nos = zpu.get32(nosp)?;
-            zpu.set32(nosp, bool2u32(tos < nos))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(bool2u32(tos < nos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         7 => { // ULESSTHANEQUAL
             let tos = zpu.v_pop()?;
-            let nosp = sp.wrapping_sub(4);
-            let nos = zpu.get32(nosp)?;
-            zpu.set32(nosp, bool2u32(tos < nos))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(bool2u32(tos < nos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
 
         8 => { // SWAP, maaaybe???
             let tos = zpu.get32(sp)?;
-            let nosp = sp.wrapping_sub(4) & 0xFFFFFFFC;
+            let nosp = sp.wrapping_add(4) & 0xFFFFFFFC;
             let nos = zpu.get32(nosp)?;
             zpu.set32(sp, nos)?;
             zpu.set32(nosp, tos)?;
@@ -375,44 +378,44 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
 
         9 => { // SLOWMULT
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, tos * nos)?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(tos * nos)?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         10 => { // LSHIFTRIGHT
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, gshift32(nos, -u2i32(tos)))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(gshift32(nos, -u2i32(tos)))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         11 => { // ASHIFTLEFT
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, agshift32(nos, u2i32(tos)))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(agshift32(nos, u2i32(tos)))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         12 => { // ASHIFTRIGHT
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, agshift32(nos, -u2i32(tos)))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(agshift32(nos, -u2i32(tos)))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         // 13: CALL
         14 => { // EQ
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, bool2u32(tos == nos))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(bool2u32(tos == nos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         15 => { // NEQ
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, bool2u32(tos != nos))?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(bool2u32(tos != nos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
@@ -423,15 +426,15 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
         },
         17 => { // SUB
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, tos - nos)?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(tos.wrapping_sub(nos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         18 => { // XOR
             let tos = zpu.v_pop()?;
-            let nos = zpu.get32(sp - 4)?;
-            zpu.set32(sp - 4, tos ^ nos)?;
+            let nos = zpu.v_pop()?;
+            zpu.v_push(tos ^ nos)?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
@@ -451,17 +454,15 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
         },
         21 => { // DIV
             let tos = zpu.v_pop()?;
-            let nosp = sp.wrapping_sub(4);
-            let nos = zpu.get32(nosp)?;
-            zpu.set32(nosp, (u2i32(tos) / u2i32(nos)) as u32)?; // might be incorrect due to rounding
+            let nos = zpu.v_pop()?;
+            zpu.v_push((u2i32(tos) / u2i32(nos)) as u32)?; // might be incorrect due to rounding
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         22 => { // MOD
             let tos = zpu.v_pop()?;
-            let nosp = sp.wrapping_sub(4);
-            let nos = zpu.get32(nosp)?;
-            zpu.set32(nosp, (u2i32(tos) % u2i32(nos)) as u32)?; // might be incorrect
+            let nos = zpu.v_pop()?;
+            zpu.v_push((u2i32(tos) % u2i32(nos)) as u32)?; // might be incorrect
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
@@ -487,7 +488,7 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
         },
         25 => { // POPPCREL
             let tos = zpu.v_pop()?;
-            zpu.pc += tos;
+            zpu.pc = pc.wrapping_add(tos);
             Ok(true)
         },
         // 26: CONFIG
