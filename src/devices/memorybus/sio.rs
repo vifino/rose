@@ -45,7 +45,7 @@ impl mem::MemoryBlock for SIOTerm {
 
     fn set(&mut self, addr: mem::Addr, val: mem::Byte) -> Result<(), MemError> {
         if addr == self.addr_write {
-            println!("SIO: got write @ {:#X}: {}", addr, val as char);
+            debug!("SIO: got write @ {:#X}: {}", addr, val as char);
             let mut buf = [0 as mem::Byte, 1];
             buf[0] = val;
             return match io::stdout().write(&buf) {
@@ -70,23 +70,23 @@ impl mem::MemoryBlock for SIOTerm {
 
     fn get(&self, addr: mem::Addr) -> Result<mem::Byte, MemError> {
         if addr == self.addr_read {
-            println!("SIO: got read @ {:#X}", addr);
+            debug!("SIO: got read @ {:#X}", addr);
             let mut buf = [0 as mem::Byte; 1];
             return match io::stdin().read(&mut buf) {
                 Ok(_) => Ok(buf[0]),
                 Err(_) => Err(MemError::HardwareFault { at: addr, reason: "SIO device failed to read from stdin." })
             }
         } else if addr == self.addr_write - 1 {
-            println!("SIO: got read @ {:#X}, returning 1", addr);
+            debug!("SIO: got read @ {:#X}, returning 1", addr);
             return Ok(1) // fake remaining bytes.
         }
 
         if addr >= self.addr_read_min && addr <= self.addr_read_max {
-            println!("SIO: got read @ {:#X}, returning 0", addr);
+            debug!("SIO: got read @ {:#X}, returning 0", addr);
             return Ok(0 as mem::Byte);
         }
         if addr >= self.addr_write_min && addr <= self.addr_write_max {
-            println!("SIO: got read @ {:#X}, returning 0", addr);
+            debug!("SIO: got read @ {:#X}, returning 0", addr);
             return Ok(0);
         }
 

@@ -18,22 +18,26 @@ pub struct ZPU {
 }
 
 // Helpers
-fn op_flip_lookup(b: Byte) -> Byte {
-    match b {
-        0 => 0,
-        1 => 2,
-        2 => 1,
-        3 => 3,
-        _ => { panic!("wtf") }
+#[inline]
+fn flipb(b: Byte) -> Byte {
+    let mut v = b;
+    // from https://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel
+    // swap odd and even bits
+    v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1);
+    // swap consecutive pairs
+    v = ((v >> 2) & 0x33333333) | ((v & 0x33333333) << 2);
+    // swap nibbles ... 
+    ((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4)
+}
+
+fn flip32(val: u32) -> u32 {
+    let mut alav = super::dis32_be(val);
+    alav.reverse();
+    for i in 0..4 {
+        alav[i] = flipb(alav[i]);
     }
-}
-fn op_flip_byte(b: Byte) -> Byte {
-    let a = op_flip_lookup((b & 0xC0) >> 6);
-    let b = op_flip_lookup((b & 0x30) >> 4);
-    let c = op_flip_lookup((b & 0x0C) >> 2);
-    let d = op_flip_lookup(b & 0x03);
-    (a | b << 2) | (c << 4 | d << 6)
-}
+    super::comb32_be(alav)
+} 
 
 /// converts u32 to i32.
 // I hope this is not endianess dependant. :v
@@ -73,9 +77,9 @@ impl ZPU {
     /// Set a u32 in memory, big endian.
     fn set32(&mut self, addr: u32, val: u32) -> Result<(), mem::MemError> {
         let vals = super::dis32_be(val);
-        println!("ZPU: set32:");
+        debug!("ZPU: set32:");
         for i in 0..4 {
-            println!(" - {:#X}: {:#X}", addr + 1, vals[i as usize]);
+            debug!(" - {:#X}: {:#X}", addr + 1, vals[i as usize]);
             self.mem.set((addr + i) as usize, vals[i as usize])?;
         }
         Ok(())
@@ -95,13 +99,13 @@ impl ZPU {
     /// Get a u32 in memory, big endian.
     fn get32(&self, addr: u32) -> Result<u32, mem::MemError> {
         let mut vals = [0 as Byte; 4];
-        println!("ZPU: get32:");
+        debug!("ZPU: get32:");
         for i in 0..4 {
-            println!(" - {:#X}", addr + i);
+            debug!(" - {:#X}", addr + i);
             vals[i as usize] = self.mem.get((addr.wrapping_add(i)) as usize)?;
         }
         let val = super::comb32_be(vals);
-        println!("ZPU: get32: val is {:#X}", val);
+        debug!("ZPU: get32: val is {:#X}", val);
         Ok(val)
     }
 
@@ -118,7 +122,7 @@ impl ZPU {
     fn v_push(&mut self, val: u32) -> Result<(), mem::MemError> {
         let newsp = self.sp.wrapping_sub(4);
         self.set32(newsp, val)?;
-        println!("ZPU: Pushed {:#X}", val);
+        debug!("ZPU: Pushed {:#X}", val);
         self.sp = newsp;
         Ok(())
     }
@@ -127,7 +131,7 @@ impl ZPU {
     #[inline(always)]
     fn v_pop(&mut self) -> Result<u32, mem::MemError> {
         let v = self.get32(self.sp)?;
-        println!("ZPU: Popped {:#X}", v);
+        debug!("ZPU: Popped {:#X}", v);
         self.sp = self.sp.wrapping_add(4) & 0xFFFFFFFC;
         Ok(v)
     }
@@ -147,12 +151,10 @@ impl ZPU {
     /// Run one instruction.
     pub fn step(&mut self) -> Result<(), mem::MemError> {
         // Debug
-        println!("");
-        println!("ZPU: PC: {:#X} ({})", self.pc, self.pc);
-        println!("ZPU: SP: {:#X} ({})", self.sp, self.sp);
+        debug!("");
+        debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, self.get32(self.sp)?);
         // Get op
         let op = self.mem.get((self.pc) as usize)?;
-        println!("ZPU: OP: {:#X}", op);
         let lim = self.last_im;
         self.last_im = false;
 
@@ -161,15 +163,18 @@ impl ZPU {
         let pc = self.pc;
         let found = match op {
             0x02 => { // PUSHSP
+                debug!("PUSHSP");
                 self.v_push(sp)?;
                 self.pc = self.pc.wrapping_add(1);
                 true
             },
             0x04 => { // POPPC
+                debug!("POPPC");
                 self.pc = self.v_pop()?;
                 true
             },
             0x05 => { // ADD
+                debug!("ADD");
                 let a = self.v_pop()?;
                 let b = self.v_pop()?;
                 self.v_push(a.wrapping_add(b))?;
@@ -177,6 +182,7 @@ impl ZPU {
                 true
             },
             0x06 => { // AND
+                debug!("AND");
                 let a = self.v_pop()?;
                 let b = self.v_pop()?;
                 self.v_push(a & b)?;
@@ -184,6 +190,7 @@ impl ZPU {
                 true 
             },
             0x07 => { // OR
+                debug!("OR");
                 let a = self.v_pop()?;
                 let b = self.v_pop()?;
                 self.v_push(a | b)?;
@@ -191,6 +198,7 @@ impl ZPU {
                 true 
             },
             0x08 => { // LOAD
+                debug!("LOAD");
                 let addr = self.get32(sp)? & 0xFFFFFFFC;
                 let val = self.get32(addr)?;
                 self.set32(sp, val)?;
@@ -198,25 +206,26 @@ impl ZPU {
                 true 
             },
             0x09 => { // NOT
+                debug!("NOT");
                 let v = self.v_pop()?;
                 self.v_push(!v)?;
                 self.pc = self.pc.wrapping_add(1);
                 true 
             },
             0x0A => { // FLIP
-                for i in 0..4 {
-                    let addr = (sp + i) as usize;
-                    let v = self.mem.get(addr)?;
-                    self.mem.set(addr, op_flip_byte(v))?;
-                }
+                debug!("FLIP");
+                let val = self.get32(sp)?;
+                self.set32(sp, flip32(val))?;
                 self.pc = self.pc.wrapping_add(1);
                 true 
             },
             0x0B => { // NOP
+                debug!("NOP");
                 self.pc = self.pc.wrapping_add(1);
                 true
             },
             0x0C => { // STORE
+                debug!("STORE");
                 let addr = self.v_pop()? & 0xFFFFFFFC;
                 let val = self.v_pop()?;
                 self.set32(addr, val)?;
@@ -224,6 +233,7 @@ impl ZPU {
                 true 
             },
             0x0D => { // POPSP
+                debug!("POPSP");
                 self.sp = self.v_pop()? & 0xFFFFFFFC;
                 self.pc = self.pc.wrapping_add(1);
                 true
@@ -232,51 +242,49 @@ impl ZPU {
         };
 
         if found {
-            println!("ZPU: OP is basic.");
             return Ok(());
         }
 
         // bitfield ops
         if (op & 0x80) == 0x80 { // IM
             self.last_im = true;
-            println!("ZPU: OP is IM.");
             self.pc = self.pc.wrapping_add(1);
             let i = (op & 0x7F) as u8;
-            println!("ZPU: IM: {:#X}", i);
+            debug!("IM {}", i);
             if lim {
-                println!("ZPU: IM: Last was IM.");
+                debug!("ZPU: IM: Last was IM.");
                 let tmp = (self.v_pop()? & 0x1FFFFFFF).wrapping_shl(7);
                 let val = tmp | (i as u32);
-                println!("ZPU: IM: val is {:#X}", val);
+                debug!("ZPU: IM: val is {:#X}", val);
                 self.v_push(val)?;
                 return Ok(());
             }
-            println!("ZPU: IM: Last was not an IM.");
+            debug!("ZPU: IM: Last was not an IM.");
             if (i & 0x40) != 0 {
                 let val = (i as u32) | 0xFFFFFF80;
-                println!("ZPU: IM: val is {:#X}", val);
+                debug!("ZPU: IM: val is {:#X}", val);
                 self.v_push(val)?;
                 return Ok(());
             }
-            println!("ZPU: IM: val is {:#X}", i);
+            debug!("ZPU: IM: val is {:#X}", i);
             self.v_push(i as u32)?;
             return Ok(());
         }
 
         let op_e0 = op & 0xE0;
         if op_e0 == 0x40 { // STORESP
-            println!("ZPU: OP is STORESP.");
-            let i = (op & 0x1F) as u32;
-            let bsp = (sp + (i ^ 0x10).wrapping_shl(2)) & 0xFFFFFFFC;
+            let i = (((op ^ 0x10) & 0x1F) as u32).wrapping_shl(2);
+            debug!("STORESP {}", i);
+            let bsp = sp.wrapping_add(i) & 0xFFFFFFFC;
             let val = self.v_pop()?;
             self.set32(bsp, val)?;
             self.pc = self.pc.wrapping_add(1);
             return Ok(());
         }
         if op_e0 == 0x60 { // LOADSP
-            println!("ZPU: OP is LOADSP.");
-            let i = (op & 0x1F) as u32;
-            let addr = (sp + ((i ^ 0x10) << 2)) & 0xFFFFFFFC;
+            let i = (((op ^ 0x10) & 0x1F) as u32).wrapping_shl(2);
+            debug!("LOADSP {}", i);
+            let addr = sp.wrapping_add(i) & 0xFFFFFFFC;
             let val = self.get32(addr)?;
             self.v_push(val)?;
             self.pc = self.pc.wrapping_add(1);
@@ -286,19 +294,19 @@ impl ZPU {
         if op_e0 == 0x20 { // EMULATE
             let eop = op & 0x1F;
             //return (self.emulate)(self, op);
-            println!("ZPU: OP is emulate.");
-            let found = zpu_emulates(self, eop)?;
+            debug!("EMULATE {}/{}", eop, eop | 0x20);
+            let found = false; //zpu_emulates(self, eop)?;
             if !found {
                 self.v_push(pc + 1)?;
-                self.pc = (eop << 5) as u32;
+                self.pc = (eop as u32) << 5
             }
             return Ok(());
         }
 
         if (op & 0xF0) == 0x10 { // ADDSP
-            println!("ZPU: OP is ADDSP.");
-            let i = (op & 0xF) as u32;
-            let addr = (sp + (i << 2)) & 0xFFFFFFFC;
+            let i = (op & 0x0F) as u32;
+            debug!("ADDSP {}", i);
+            let addr = sp.wrapping_add(i.wrapping_shl(2)) & 0xFFFFFFFC;
             let val = self.get32(addr)?;
             let pval = self.v_pop()?;
             self.v_push(val.wrapping_add(pval))?;
@@ -307,7 +315,7 @@ impl ZPU {
         }
 
         // Should be error but it isn't right now.
-        println!("ZPU: OP not found.");;
+        debug!("ZPU: OP not found.");;
         Ok(())
     }
 }
@@ -321,7 +329,7 @@ impl ZPU {
 pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
     let sp = zpu.sp;
     let pc = zpu.pc;
-    println!("ZPU: EMULATE: {:#X}", op);
+    debug!("ZPU: EMULATE: {:#X}", op);
     match op {
         2 => { // LOADH
             let addr = zpu.get32(sp)?;

@@ -45,12 +45,12 @@ fn main() {
     }
 
     // Set up bus
-    let membus = Box::new(MemoryBus::new(vec![sio, ram]));
+    let membus = Box::new(MemoryBus::new(vec![sio, ram, null]));
 
     // CPU
     let mut cpu = ZPU::new(membus);
 
-    for i in 0..2640 {
+    loop {
         cpu.step().unwrap();
     }
 }
