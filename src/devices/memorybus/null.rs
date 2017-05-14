@@ -22,3 +22,4 @@ impl mem::MemoryBlock for NullBlock {
         Ok(())
     }
 }
+

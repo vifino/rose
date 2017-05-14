@@ -35,7 +35,7 @@ impl SIOTerm {
             min: cmp::min(read - 4, write - 4),
             max: cmp::max(read, write),
         }
-    } 
+    }
 }
 
 impl mem::MemoryBlock for SIOTerm {
@@ -73,12 +73,21 @@ impl mem::MemoryBlock for SIOTerm {
             debug!("SIO: got read @ {:#X}", addr);
             let mut buf = [0 as mem::Byte; 1];
             return match io::stdin().read(&mut buf) {
-                Ok(_) => Ok(buf[0]),
-                Err(_) => Err(MemError::HardwareFault { at: addr, reason: "SIO device failed to read from stdin." })
+                Ok(_) => {
+                    debug!("SIO: read char {}", buf[0] as char);
+                    Ok(buf[0])
+                },
+                Err(_) => {
+                    debug!("SIO: hw fail");
+                    Err(MemError::HardwareFault { at: addr, reason: "SIO device failed to read from stdin." })
+                },
             }
         } else if addr == self.addr_write - 1 {
             debug!("SIO: got read @ {:#X}, returning 1", addr);
             return Ok(1) // fake remaining bytes.
+        } else if addr == self.addr_read - 1 {
+            debug!("SIO: got read @ {:#X}, returning 1", addr);
+            return Ok(1) // results in the same as being or'd with 0x100 for a LOAD
         }
 
         if addr >= self.addr_read_min && addr <= self.addr_read_max {
@@ -100,3 +109,4 @@ impl mem::MemoryBlock for SIOTerm {
         Err(MemError::InvalidAddr { addr: addr })
     }
 }
+

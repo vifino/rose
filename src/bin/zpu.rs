@@ -45,7 +45,7 @@ fn main() {
     }
 
     // Set up bus
-    let membus = Box::new(MemoryBus::new(vec![sio, ram, null]));
+    let membus = Box::new(MemoryBus::new(vec![sio, ram]));
 
     // CPU
     let mut cpu = ZPU::new(membus);

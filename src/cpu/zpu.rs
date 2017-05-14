@@ -26,7 +26,7 @@ fn flipb(b: Byte) -> Byte {
     v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1);
     // swap consecutive pairs
     v = ((v >> 2) & 0x33333333) | ((v & 0x33333333) << 2);
-    // swap nibbles ... 
+    // swap nibbles ...
     ((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4)
 }
 
@@ -37,7 +37,7 @@ fn flip32(val: u32) -> u32 {
         alav[i] = flipb(alav[i]);
     }
     super::comb32_be(alav)
-} 
+}
 
 /// converts u32 to i32.
 // I hope this is not endianess dependant. :v
@@ -69,7 +69,7 @@ fn agshift32(val: u32, shift: i32) -> u32 {
     let tmp = gshift32(val, shift);
     if (val & 0x80000000) != 0 {
         return (gshift32(0xFFFFFFFF, shift) ^ 0xFFFFFFFF) | val;
-    } 
+    }
     tmp
 }
 
@@ -187,7 +187,7 @@ impl ZPU {
                 let b = self.v_pop()?;
                 self.v_push(a & b)?;
                 self.pc = self.pc.wrapping_add(1);
-                true 
+                true
             },
             0x07 => { // OR
                 debug!("OR");
@@ -195,7 +195,7 @@ impl ZPU {
                 let b = self.v_pop()?;
                 self.v_push(a | b)?;
                 self.pc = self.pc.wrapping_add(1);
-                true 
+                true
             },
             0x08 => { // LOAD
                 debug!("LOAD");
@@ -203,21 +203,21 @@ impl ZPU {
                 let val = self.get32(addr)?;
                 self.set32(sp, val)?;
                 self.pc = self.pc.wrapping_add(1);
-                true 
+                true
             },
             0x09 => { // NOT
                 debug!("NOT");
                 let v = self.v_pop()?;
                 self.v_push(!v)?;
                 self.pc = self.pc.wrapping_add(1);
-                true 
+                true
             },
             0x0A => { // FLIP
                 debug!("FLIP");
                 let val = self.get32(sp)?;
                 self.set32(sp, flip32(val))?;
                 self.pc = self.pc.wrapping_add(1);
-                true 
+                true
             },
             0x0B => { // NOP
                 debug!("NOP");
@@ -230,7 +230,7 @@ impl ZPU {
                 let val = self.v_pop()?;
                 self.set32(addr, val)?;
                 self.pc = self.pc.wrapping_add(1);
-                true 
+                true
             },
             0x0D => { // POPSP
                 debug!("POPSP");
@@ -513,9 +513,10 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
             let tos = zpu.get32(sp)?;
             let routinep = zpu.pc.wrapping_add(tos);
             zpu.set32(sp, pc.wrapping_add(1))?;
-            zpu.pc = routinep; 
+            zpu.pc = routinep;
             Ok(true)
         },
         _ => Ok(false),
     }
 }
+
