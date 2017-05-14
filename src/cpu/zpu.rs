@@ -20,14 +20,14 @@ pub struct ZPU {
 // Helpers
 #[inline]
 fn flipb(b: Byte) -> Byte {
-    let mut v = b;
+    let mut v = b as u32;
     // from https://graphics.stanford.edu/~seander/bithacks.html#ReverseParallel
     // swap odd and even bits
     v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1);
     // swap consecutive pairs
     v = ((v >> 2) & 0x33333333) | ((v & 0x33333333) << 2);
     // swap nibbles ...
-    ((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4)
+    (((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4)) as Byte
 }
 
 fn flip32(val: u32) -> u32 {

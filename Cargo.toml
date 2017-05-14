@@ -11,3 +11,6 @@ log = "0.3"
 [[bin]]
 name = "zpu"
 path = "src/bin/zpu.rs"
+
+[profile.release]
+lto = true

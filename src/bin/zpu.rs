@@ -10,13 +10,11 @@ extern crate rose;
 use rose::cpu::zpu::ZPU;
 use rose::bus::MemoryBus;
 use rose::devices::memorybus::sio::SIOTerm;
-use rose::devices::memorybus::null::NullBlock;
 
 use mem::MemoryBlock;
 use mem::MemoryCreator;
 use mem::std_impls::MemVector;
 
-use std::io;
 use std::io::Read;
 use std::env;
 use std::fs::File;
@@ -32,12 +30,10 @@ fn main() {
 
     // Device init
     let mut ram = Box::new(MemVector::new(0x80000));
-    let mut sio = Box::new(SIOTerm::new(0x80000028 + 3, 0x80000024 + 3)); // Serial I/O.
-    let mut null = Box::new(NullBlock {}); // Null, so more or less invalid writes don't error. For now.
-
+    let sio = Box::new(SIOTerm::new(0x80000028 + 3, 0x80000024 + 3)); // Serial I/O.
 
     // Load rom.
-    let mut f = File::open(fname).unwrap();
+    let f = File::open(fname).unwrap();
     let mut i = 0;
     for byte in f.bytes() {
         ram.set(i, byte.unwrap()).unwrap();

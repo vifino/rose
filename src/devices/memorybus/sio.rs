@@ -9,6 +9,8 @@ use std::cmp;
 
 /// Basic Terminal I/O.
 ///
+/// Mostly for the ZPU.
+///
 /// To read a char, `get` `addr_read`.
 /// To print a char, `set` `addr_write`.
 /// Plus a ton more, because ZPU reasons.
