@@ -8,3 +8,12 @@ A NEQBRANCH gets taken even though it shouldn't, me thinks.
 Might be another issue entirely, but it's the closest I have right now.
 
 More investigation is definitly needed.
+
+# Sun May 14 00:32:18 -00 2017
+It works!
+
+The non-EMULATE instructions work!
+
+That along with serial I/O, the memory bus and who knows what else.
+
+Big step. Next up, EMULATE instructions. Shouldn't take too long either.
