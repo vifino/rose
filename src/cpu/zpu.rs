@@ -89,8 +89,7 @@ impl ZPU {
     /// Set a u16 in memory, big endian.
     fn set16(&mut self, addr: u32, val: u16) -> Result<(), ErrorKind> {
         let vals = super::dis16_be(val);
-        //self.mem.set(addr as usize, 0)?;
-        //self.mem.set((addr + 1) as usize, 0)?;
+        //self.mem.set(addr as usize, 0)?        //self.mem.set((addr + 1) as usize, 0)?;
         self.mem.set(addr as usize, vals[0])?;
         self.mem.set((addr + 1) as usize, vals[1])?;
         //self.mem.set((addr + 2) as usize, vals[0])?;
@@ -154,7 +153,7 @@ impl ZPU {
     pub fn step(&mut self) -> Result<(), ErrorKind> { // TODO: make it use a custom error type or something.
         // Debug
         debug!("");
-        debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, self.get32(self.sp)?);
+        debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, match self.get32(self.sp) { Ok(val) => val, Err(_) => 0});
 
         // Get op
         let op = self.mem.get((self.pc) as usize)?;
@@ -298,7 +297,7 @@ impl ZPU {
             let eop = op & 0x1F;
             //return (self.emulate)(self, op);
             debug!("EMULATE {}/{}", eop, eop | 0x20);
-            let found = false; //zpu_emulates(self, eop)?;
+            let found = zpu_emulates(self, eop)?;
             if !found {
                 self.v_push(pc + 1)?;
                 self.pc = (eop as u32) << 5
@@ -372,7 +371,7 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, ErrorKind> {
         7 => { // ULESSTHANEQUAL
             let tos = zpu.v_pop()?;
             let nos = zpu.v_pop()?;
-            zpu.v_push(bool2u32(tos < nos))?;
+            zpu.v_push(bool2u32(tos <= nos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
@@ -433,12 +432,13 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, ErrorKind> {
         16 => { // NEG
             let tos = zpu.get32(sp)?;
             zpu.set32(sp, -u2i32(tos) as u32)?;
+            zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
         17 => { // SUB
             let tos = zpu.v_pop()?;
             let nos = zpu.v_pop()?;
-            zpu.v_push(tos.wrapping_sub(nos))?;
+            zpu.v_push(nos.wrapping_sub(tos))?;
             zpu.pc = zpu.pc.wrapping_add(1);
             Ok(true)
         },
