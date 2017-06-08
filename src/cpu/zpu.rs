@@ -6,6 +6,7 @@
 
 extern crate mem;
 
+use super::super::errors::Error as RError;
 use self::mem::errors::*;
 
 // Handy aliases
@@ -43,6 +44,7 @@ fn flip32(val: u32) -> u32 {
 
 /// converts u32 to i32.
 // I hope this is not endianess dependant. :v
+#[inline(always)]
 fn u2i32(v: u32) -> i32 {
     if (v & 0x80000000) != 0 {
         return (v - 0x10000000) as i32;
@@ -77,33 +79,35 @@ fn agshift32(val: u32, shift: i32) -> u32 {
 
 impl ZPU {
     /// Set a u32 in memory, big endian.
-    fn set32(&mut self, addr: u32, val: u32) -> Result<(), ErrorKind> {
+    fn set32(&mut self, addr: u32, val: u32) -> Result<(), Error> {
         let vals = super::dis32_be(val);
         debug!("ZPU: set32:");
         for i in 0..4 {
             debug!(" - {:#X}: {:#X}", addr + 1, vals[i as usize]);
-            self.mem.set((addr + i) as usize, vals[i as usize])?;
+            self.mem.set((addr + i) as usize, vals[i as usize])
+                .chain_err(|| format!("unable to complete set32, failure to set byte {}", i+1))?;
         }
         Ok(())
     }
     /// Set a u16 in memory, big endian.
-    fn set16(&mut self, addr: u32, val: u16) -> Result<(), ErrorKind> {
+    fn set16(&mut self, addr: u32, val: u16) -> Result<(), Error> {
         let vals = super::dis16_be(val);
         //self.mem.set(addr as usize, 0)?        //self.mem.set((addr + 1) as usize, 0)?;
-        self.mem.set(addr as usize, vals[0])?;
-        self.mem.set((addr + 1) as usize, vals[1])?;
+        self.mem.set(addr as usize, vals[0]).chain_err(|| "unable to complete set16, failure to set byte 1")?;
+        self.mem.set((addr + 1) as usize, vals[1]).chain_err(|| "unable to complete set16, failure to set byte 2")?;
         //self.mem.set((addr + 2) as usize, vals[0])?;
         //self.mem.set((addr + 3) as usize, vals[1])?;
         Ok(())
     }
 
     /// Get a u32 in memory, big endian.
-    fn get32(&self, addr: u32) -> Result<u32, ErrorKind> {
+    fn get32(&self, addr: u32) -> Result<u32, Error> {
         let mut vals = [0 as Byte; 4];
         debug!("ZPU: get32:");
         for i in 0..4 {
             debug!(" - {:#X}", addr + i);
-            vals[i as usize] = self.mem.get((addr.wrapping_add(i)) as usize)?;
+            vals[i as usize] = self.mem.get((addr.wrapping_add(i)) as usize)
+                .chain_err(|| format!("unable to complete get32, failure to get byte {}", i+1))?;
         }
         let val = super::comb32_be(vals);
         debug!("ZPU: get32: val is {:#X}", val);
@@ -111,18 +115,18 @@ impl ZPU {
     }
 
     /// Get a u16 in memory, big endian.
-    fn get16(&self, addr: u32) -> Result<u16, ErrorKind> {
+    fn get16(&self, addr: u32) -> Result<u16, Error> {
         let mut vals = [0 as Byte; 2];
-        vals[0] = self.mem.get(addr as usize)?;
-        vals[1] = self.mem.get((addr.wrapping_add(1)) as usize)?;
+        vals[0] = self.mem.get(addr as usize).chain_err(|| "unable to complete get16, failure to get byte 1")?;
+        vals[1] = self.mem.get((addr.wrapping_add(1)) as usize).chain_err(|| "unable to complete get16, failure to get byte 2")?;
         Ok(super::comb16_be(vals))
     }
 
     /// Stack push.
     #[inline(always)]
-    fn v_push(&mut self, val: u32) -> Result<(), ErrorKind> {
+    fn v_push(&mut self, val: u32) -> Result<(), Error> {
         let newsp = self.sp.wrapping_sub(4);
-        self.set32(newsp, val)?;
+        self.set32(newsp, val).chain_err(|| "unable to complete v_push")?;
         debug!("ZPU: Pushed {:#X}", val);
         self.sp = newsp;
         Ok(())
@@ -130,8 +134,8 @@ impl ZPU {
 
     /// Stack pop.
     #[inline(always)]
-    fn v_pop(&mut self) -> Result<u32, ErrorKind> {
-        let v = self.get32(self.sp)?;
+    fn v_pop(&mut self) -> Result<u32, Error> {
+        let v = self.get32(self.sp).chain_err(|| "unable to complete v_pop")?;
         debug!("ZPU: Popped {:#X}", v);
         self.sp = self.sp.wrapping_add(4) & 0xFFFFFFFC;
         Ok(v)
@@ -148,15 +152,17 @@ impl ZPU {
             mem: mem,
         }
     }
+}
 
+impl super::CPU for ZPU {
     /// Run one instruction.
-    pub fn step(&mut self) -> Result<(), ErrorKind> { // TODO: make it use a custom error type or something.
+    fn step(&mut self) -> Result<(), RError> { // TODO: make it use a custom error type or something.
         // Debug
         debug!("");
         debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, match self.get32(self.sp) { Ok(val) => val, Err(_) => 0});
 
         // Get op
-        let op = self.mem.get((self.pc) as usize)?;
+        let op = self.mem.get((self.pc) as usize).chain_err(|| "ZPU failed to fetch OP")?;
         let lim = self.last_im;
         self.last_im = false;
 
@@ -318,7 +324,7 @@ impl ZPU {
 
         // Should be error but it isn't right now.
         debug!("ZPU: OP not found.");;
-        Err(ErrorKind::NotImplemented)
+        bail!("ZPU OP not implemented: {:#X}", op)
     }
 }
 
@@ -328,7 +334,7 @@ impl ZPU {
 /// are obviously quicker than software ones.
 /// Apart from that, not all software implements those, relying on hardware implementations
 /// instead.
-pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, ErrorKind> {
+pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, Error> {
     let sp = zpu.sp;
     let pc = zpu.pc;
     debug!("ZPU: EMULATE: {:#X}", op);

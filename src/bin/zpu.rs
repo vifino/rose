@@ -7,6 +7,7 @@
 extern crate mem;
 extern crate rose;
 
+use rose::cpu::CPU;
 use rose::cpu::zpu::ZPU;
 use rose::bus::memorybus::{MemoryBus, MemoryBusDevice};
 use rose::devices::memorybus::sio::SIOTerm;
