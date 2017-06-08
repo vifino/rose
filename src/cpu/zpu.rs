@@ -6,15 +6,17 @@
 
 extern crate mem;
 
+use self::mem::errors::*;
+
 // Handy aliases
 type Byte = u8;
 
 pub struct ZPU {
-    sp: u32,
-    pc: u32,
+    pub sp: u32,
+    pub pc: u32,
     last_im: bool,
 
-    mem: Box<mem::MemoryBlock>,
+    pub mem: Box<mem::MemoryBlock>,
 }
 
 // Helpers
@@ -75,7 +77,7 @@ fn agshift32(val: u32, shift: i32) -> u32 {
 
 impl ZPU {
     /// Set a u32 in memory, big endian.
-    fn set32(&mut self, addr: u32, val: u32) -> Result<(), mem::MemError> {
+    fn set32(&mut self, addr: u32, val: u32) -> Result<(), ErrorKind> {
         let vals = super::dis32_be(val);
         debug!("ZPU: set32:");
         for i in 0..4 {
@@ -85,7 +87,7 @@ impl ZPU {
         Ok(())
     }
     /// Set a u16 in memory, big endian.
-    fn set16(&mut self, addr: u32, val: u16) -> Result<(), mem::MemError> {
+    fn set16(&mut self, addr: u32, val: u16) -> Result<(), ErrorKind> {
         let vals = super::dis16_be(val);
         //self.mem.set(addr as usize, 0)?;
         //self.mem.set((addr + 1) as usize, 0)?;
@@ -97,7 +99,7 @@ impl ZPU {
     }
 
     /// Get a u32 in memory, big endian.
-    fn get32(&self, addr: u32) -> Result<u32, mem::MemError> {
+    fn get32(&self, addr: u32) -> Result<u32, ErrorKind> {
         let mut vals = [0 as Byte; 4];
         debug!("ZPU: get32:");
         for i in 0..4 {
@@ -110,7 +112,7 @@ impl ZPU {
     }
 
     /// Get a u16 in memory, big endian.
-    fn get16(&self, addr: u32) -> Result<u16, mem::MemError> {
+    fn get16(&self, addr: u32) -> Result<u16, ErrorKind> {
         let mut vals = [0 as Byte; 2];
         vals[0] = self.mem.get(addr as usize)?;
         vals[1] = self.mem.get((addr.wrapping_add(1)) as usize)?;
@@ -119,7 +121,7 @@ impl ZPU {
 
     /// Stack push.
     #[inline(always)]
-    fn v_push(&mut self, val: u32) -> Result<(), mem::MemError> {
+    fn v_push(&mut self, val: u32) -> Result<(), ErrorKind> {
         let newsp = self.sp.wrapping_sub(4);
         self.set32(newsp, val)?;
         debug!("ZPU: Pushed {:#X}", val);
@@ -129,7 +131,7 @@ impl ZPU {
 
     /// Stack pop.
     #[inline(always)]
-    fn v_pop(&mut self) -> Result<u32, mem::MemError> {
+    fn v_pop(&mut self) -> Result<u32, ErrorKind> {
         let v = self.get32(self.sp)?;
         debug!("ZPU: Popped {:#X}", v);
         self.sp = self.sp.wrapping_add(4) & 0xFFFFFFFC;
@@ -141,7 +143,7 @@ impl ZPU {
     pub fn new(mem: Box<mem::MemoryBlock>) -> ZPU {
         ZPU {
             pc: 0,
-            sp: 0x80000,
+            sp: 0,
 
             last_im: false,
             mem: mem,
@@ -149,10 +151,11 @@ impl ZPU {
     }
 
     /// Run one instruction.
-    pub fn step(&mut self) -> Result<(), mem::MemError> {
+    pub fn step(&mut self) -> Result<(), ErrorKind> { // TODO: make it use a custom error type or something.
         // Debug
         debug!("");
         debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, self.get32(self.sp)?);
+
         // Get op
         let op = self.mem.get((self.pc) as usize)?;
         let lim = self.last_im;
@@ -316,7 +319,7 @@ impl ZPU {
 
         // Should be error but it isn't right now.
         debug!("ZPU: OP not found.");;
-        Ok(())
+        Err(ErrorKind::NotImplemented)
     }
 }
 
@@ -326,7 +329,7 @@ impl ZPU {
 /// are obviously quicker than software ones.
 /// Apart from that, not all software implements those, relying on hardware implementations
 /// instead.
-pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
+pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, ErrorKind> {
     let sp = zpu.sp;
     let pc = zpu.pc;
     debug!("ZPU: EMULATE: {:#X}", op);
@@ -519,4 +522,3 @@ pub fn zpu_emulates(zpu: &mut ZPU, op: Byte) -> Result<bool, mem::MemError> {
         _ => Ok(false),
     }
 }
-

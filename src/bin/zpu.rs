@@ -8,7 +8,7 @@ extern crate mem;
 extern crate rose;
 
 use rose::cpu::zpu::ZPU;
-use rose::bus::MemoryBus;
+use rose::bus::memorybus::{MemoryBus, MemoryBusDevice};
 use rose::devices::memorybus::sio::SIOTerm;
 
 use mem::MemoryBlock;
@@ -31,7 +31,7 @@ fn main() {
     // Device init
     let mut ram = Box::new(MemVector::new(0x80000));
     let sio = Box::new(SIOTerm::new(0x80000028 + 3, 0x80000024 + 3)); // Serial I/O.
-
+    
     // Load rom.
     let f = File::open(fname).unwrap();
     let mut i = 0;
@@ -41,10 +41,12 @@ fn main() {
     }
 
     // Set up bus
-    let membus = Box::new(MemoryBus::new(vec![sio, ram]));
-
+    let devices: Vec<Box<MemoryBusDevice>> = vec![sio, ram];
+    let membus = Box::new(MemoryBus::new(devices));
+    
     // CPU
     let mut cpu = ZPU::new(membus);
+    cpu.sp = 0x80000;
 
     loop {
         cpu.step().unwrap();

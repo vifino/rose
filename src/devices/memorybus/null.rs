@@ -5,6 +5,8 @@
 
 extern crate mem;
 
+use self::mem::errors::*;
+
 use std::usize;
 
 pub struct NullBlock {}
@@ -14,11 +16,11 @@ impl mem::MemoryBlock for NullBlock {
         usize::MAX
     }
 
-    fn get(&self, _addr: mem::Addr) -> Result<mem::Byte, mem::MemError> {
+    fn get(&self, _addr: mem::Addr) -> Result<mem::Byte, Error> {
         Ok(0)
     }
 
-    fn set(&mut self, _addr: mem::Addr, _value: mem::Byte) -> Result<(), mem::MemError> {
+    fn set(&mut self, _addr: mem::Addr, _value: mem::Byte) -> Result<(), Error> {
         Ok(())
     }
 }

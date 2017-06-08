@@ -1,7 +1,10 @@
 // Rudimentary "serial" I/O.
 
 extern crate mem;
-use self::mem::MemError;
+
+use self::mem::errors::*;
+use super::super::super::bus::memorybus::MemoryBusDevice;
+use super::super::super::bus::BusDevice;
 
 use std::io;
 use std::io::prelude::*;
@@ -45,14 +48,14 @@ impl mem::MemoryBlock for SIOTerm {
         self.max // highest address.
     }
 
-    fn set(&mut self, addr: mem::Addr, val: mem::Byte) -> Result<(), MemError> {
+    fn set(&mut self, addr: mem::Addr, val: mem::Byte) -> Result<(), Error> {
         if addr == self.addr_write {
             debug!("SIO: got write @ {:#X}: {}", addr, val as char);
             let mut buf = [0 as mem::Byte, 1];
             buf[0] = val;
             return match io::stdout().write(&buf) {
                 Ok(_) => Ok(()),
-                Err(_) => Err(MemError::HardwareFault { at: addr, reason: "SIO device failed to read from stdin." })
+                Err(_) => bail!(ErrorKind::HardwareFault(addr, "SIO device failed to read from stdin."))
             }
         }
 
@@ -61,16 +64,16 @@ impl mem::MemoryBlock for SIOTerm {
         }
 
         if addr < self.min {
-            return Err(MemError::TooSmall { given: addr, min: self.min });
+            bail!(ErrorKind::TooSmall(addr, self.min));
         }
         if addr > self.max {
-            return Err(MemError::TooBig { given: addr, max: self.max });
+            bail!(ErrorKind::TooBig(addr, self.max));
         }
 
-        Err(MemError::InvalidAddr { addr: addr })
+        bail!(ErrorKind::InvalidAddr(addr))
     }
 
-    fn get(&self, addr: mem::Addr) -> Result<mem::Byte, MemError> {
+    fn get(&self, addr: mem::Addr) -> Result<mem::Byte, Error> {
         if addr == self.addr_read {
             debug!("SIO: got read @ {:#X}", addr);
             let mut buf = [0 as mem::Byte; 1];
@@ -81,7 +84,7 @@ impl mem::MemoryBlock for SIOTerm {
                 },
                 Err(_) => {
                     debug!("SIO: hw fail");
-                    Err(MemError::HardwareFault { at: addr, reason: "SIO device failed to read from stdin." })
+                    bail!(ErrorKind::HardwareFault(addr, "SIO device failed to read from stdin."))
                 },
             }
         } else if addr == self.addr_write - 1 {
@@ -102,13 +105,16 @@ impl mem::MemoryBlock for SIOTerm {
         }
 
         if addr < self.min {
-            return Err(MemError::TooSmall { given: addr, min: self.min });
+            bail!(ErrorKind::TooSmall(addr, self.min));
         }
         if addr > self.max {
-            return Err(MemError::TooBig { given: addr, max: self.max });
+            bail!(ErrorKind::TooBig(addr, self.max));
         }
 
-        Err(MemError::InvalidAddr { addr: addr })
+        bail!(ErrorKind::InvalidAddr(addr))
     }
 }
+
+impl BusDevice for SIOTerm {}
+impl MemoryBusDevice for SIOTerm {}
 
