@@ -16,4 +16,4 @@ after_success: |
 
 matrix:
   allow_failures:
-- rust: nightly
+    - rust: nightly
