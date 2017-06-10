@@ -6,8 +6,7 @@
 
 extern crate mem;
 
-use super::super::errors::Error as RError;
-use self::mem::errors::*;
+use super::super::errors::*;
 
 // Handy aliases
 type Byte = u8;
@@ -156,7 +155,7 @@ impl ZPU {
 
 impl super::CPU for ZPU {
     /// Run one instruction.
-    fn step(&mut self) -> Result<(), RError> { // TODO: make it use a custom error type or something.
+    fn step(&mut self) -> Result<(), Error> { // TODO: make it use a custom error type or something.
         // Debug
         debug!("");
         debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, match self.get32(self.sp) { Ok(val) => val, Err(_) => 0});

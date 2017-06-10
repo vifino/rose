@@ -1,0 +1,19 @@
+dist: trusty
+sudo: required
+
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+
+after_success: |
+    cargo doc \
+    && echo '<meta http-equiv=refresh content=0;url=mem/index.html>' > target/doc/index.html && \
+    sudo pip install ghp-import && \
+    ghp-import -n target/doc && \
+    git push -qf https://${GHTOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+
+matrix:
+  allow_failures:
+- rust: nightly
