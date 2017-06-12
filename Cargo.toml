@@ -8,6 +8,7 @@ mem = { git = "https://github.com/vifino/rust-mem.git" }
 byteorder = "1.0.0"
 log = "0.3"
 error-chain="0.10.0"
+clap = "2"
 
 [[bin]]
 name = "zpu"

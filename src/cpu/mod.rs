@@ -10,21 +10,28 @@ use super::errors::*;
 // Handy aliases
 type Byte = u8;
 
+/// States
+/// Simply a state.
+#[derive(PartialEq, Clone)]
+pub enum CPUState {
+    Running,
+    Waiting,
+    Sleeping,
+    Stopped,
+}
+
 pub trait CPU {
     /// Run a single instruction.
     fn step(&mut self) -> Result<(), Error>;
+
+    /// Get state.
+    fn state(&self) -> CPUState;
+
+    /// Start.
+    fn start(&mut self) -> Result<(), Error>;
 }
 
 // Helpers
-/// "Disassemble" value into a tuple of 4 bytes.
-/*fn dis32_be(val: u32) -> [Byte; 4] {
-    let a = ((val >> 24) & 0xFF) as u8;
-    let b = ((val >> 16) & 0xFF) as u8;
-    let c = ((val >> 8) & 0xFF) as u8;
-    let d = (val & 0xFF) as u8;
-    [a, b, c, d]
-}*/
-
 #[inline(always)]
 fn dis32_be(val: u32) -> [Byte; 4] {
     let mut buf = [0; 4];

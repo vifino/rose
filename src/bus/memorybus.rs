@@ -69,7 +69,7 @@ impl mem::MemoryBlock for MemoryBus {
                         ErrorKind::NotImplemented => false,
                         ErrorKind::NotApplicable(_) => false,
                         ErrorKind::InvalidAddr(_) => false,
-                        _ => bail!("non-ignorable error in bus at pos {}", pos),
+                        _ => bail!("non-ignorable error in bus from device {}", pos),
                     };
                 },
             }
@@ -92,15 +92,15 @@ impl mem::MemoryBlock for MemoryBus {
                         ErrorKind::NotImplemented => false,
                         ErrorKind::NotApplicable(_)=> false,
                         ErrorKind::InvalidAddr(_) => false,
-                        _ => bail!("non-ignorable error in bus at pos {}", pos),
+                        _ => bail!("non-ignorable error in bus from device {}", pos),
                     };
                 },
             }
             pos += 1;
         }
         // Err(mem::MemError::HardwareFault { at: addr, reason: "All devices returned faults." })
-        bail!("all devices returned faults in bus, tried {} devices", pos-1)
-        
+        bail!("receiving hard failures from all bus devices, tried {} devices in total", pos-1)
+
     }
 
     fn delete(&mut self, from: mem::Addr, to: mem::Addr) -> Result<(), Error> {
@@ -117,7 +117,7 @@ impl mem::MemoryBlock for MemoryBus {
                         ErrorKind::NotImplemented => false,
                         ErrorKind::NotApplicable(_) => false,
                         ErrorKind::InvalidAddr(_) => false,
-                        _ => bail!("non-ignorable error in bus at pos {}", pos),
+                        _ => bail!("non-ignorable error in bus from device {}", pos),
                     };
                 },
             }
@@ -136,7 +136,7 @@ impl mem::MemoryBlock for MemoryBus {
                     match err {
                         ErrorKind::NotImplemented => false,
                         ErrorKind::NotApplicable(_) => false,
-                        _ => bail!("non-ignorable error in bus at pos {}", pos),
+                        _ => bail!("non-ignorable error in bus from device {}", pos),
                     };
                 },
             }

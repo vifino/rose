@@ -7,6 +7,7 @@
 extern crate mem;
 
 use super::super::errors::*;
+use super::CPUState as State;
 
 // Handy aliases
 type Byte = u8;
@@ -16,7 +17,10 @@ pub struct ZPU {
     pub pc: u32,
     last_im: bool,
 
+    state: State,
+
     pub mem: Box<mem::MemoryBlock>,
+    hwemus: bool,
 }
 
 // Helpers
@@ -142,13 +146,16 @@ impl ZPU {
 }
 
 impl ZPU {
-    pub fn new(mem: Box<mem::MemoryBlock>) -> ZPU {
+    pub fn new(mem: Box<mem::MemoryBlock>, emus: bool) -> ZPU {
         ZPU {
             pc: 0,
             sp: 0,
-
             last_im: false,
+
+            state: State::Stopped,
+
             mem: mem,
+            hwemus: emus,
         }
     }
 }
@@ -156,6 +163,11 @@ impl ZPU {
 impl super::CPU for ZPU {
     /// Run one instruction.
     fn step(&mut self) -> Result<(), Error> { // TODO: make it use a custom error type or something.
+        // Bail out if not running
+        if self.state != State::Running {
+            bail!(ErrorKind::CPUNotRunning);
+        }
+
         // Debug
         debug!("");
         debugf!("{} ({:x}/{:x}) :", self.pc, self.sp, match self.get32(self.sp) { Ok(val) => val, Err(_) => 0});
@@ -169,12 +181,20 @@ impl super::CPU for ZPU {
         let sp = self.sp;
         let pc = self.pc;
         let found = match op {
+            0x00 => { // breakpoint
+                debug!("BREAKPOINT");
+                self.pc = self.pc.wrapping_add(1);
+                self.state = State::Sleeping;
+                true
+            },
+            // 0x01 = SHIFTLEFT?
             0x02 => { // PUSHSP
                 debug!("PUSHSP");
                 self.v_push(sp)?;
                 self.pc = self.pc.wrapping_add(1);
                 true
             },
+            // 0x03 = POPINT?
             0x04 => { // POPPC
                 debug!("POPPC");
                 self.pc = self.v_pop()?;
@@ -245,6 +265,8 @@ impl super::CPU for ZPU {
                 self.pc = self.pc.wrapping_add(1);
                 true
             },
+            // 0x0E = IPSUM?
+            // 0x0F = SNCPY?
             _ => false,
         };
 
@@ -302,7 +324,10 @@ impl super::CPU for ZPU {
             let eop = op & 0x1F;
             //return (self.emulate)(self, op);
             debug!("EMULATE {}/{}", eop, eop | 0x20);
-            let found = zpu_emulates(self, eop)?;
+            let found = match self.hwemus {
+                true => zpu_emulates(self, eop)?,
+                false => false,
+            };
             if !found {
                 self.v_push(pc + 1)?;
                 self.pc = (eop as u32) << 5
@@ -321,9 +346,21 @@ impl super::CPU for ZPU {
             return Ok(());
         }
 
-        // Should be error but it isn't right now.
-        debug!("ZPU: OP not found.");;
+        self.state = State::Stopped;
         bail!("ZPU OP not implemented: {:#X}", op)
+    }
+
+    // State stuff
+
+    // Get state
+    fn state(&self) -> State {
+        self.state.clone()
+    }
+
+    // Start
+    fn start(&mut self) -> Result<(), Error> {
+        self.state = State::Running;
+        Ok(())
     }
 }
 

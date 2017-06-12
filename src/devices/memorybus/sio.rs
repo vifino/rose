@@ -32,13 +32,27 @@ impl SIOTerm {
     pub fn new(read: mem::Addr, write: mem::Addr) -> SIOTerm {
         SIOTerm {
             addr_read: read,
-            addr_read_min: read - 4,
+            addr_read_min: read - 3,
             addr_read_max: read,
             addr_write: write,
-            addr_write_min: write - 4,
+            addr_write_min: write - 3,
             addr_write_max: write,
-            min: cmp::min(read - 4, write - 4),
+            min: cmp::min(read - 3, write - 3),
             max: cmp::max(read, write),
+        }
+    }
+    pub fn new_zpu(base: mem::Addr) -> SIOTerm {
+        let addr_read = base +  3 + 4;
+        let addr_write = base + 3;
+        SIOTerm {
+            addr_read: addr_read,
+            addr_read_min: addr_read - 3,
+            addr_read_max: addr_read,
+            addr_write: addr_write,
+            addr_write_min: addr_write - 3,
+            addr_write_max: addr_write,
+            min: cmp::min(addr_read - 3, addr_write - 3),
+            max: cmp::max(addr_read, addr_write),
         }
     }
 }
@@ -117,4 +131,3 @@ impl mem::MemoryBlock for SIOTerm {
 
 impl BusDevice for SIOTerm {}
 impl MemoryBusDevice for SIOTerm {}
-

@@ -11,4 +11,10 @@ error_chain! {
     links {
         Mem(mem::errors::Error, mem::errors::ErrorKind);
     }
+
+    errors {
+        CPUNotRunning {
+            description("cpu's state is not running")
+        }
+    }
 }
