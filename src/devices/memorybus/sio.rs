@@ -3,7 +3,7 @@
 extern crate mem;
 
 use self::mem::errors::*;
-use super::super::super::bus::memorybus::MemoryBusDevice;
+use super::super::super::bus::memorybus::{MemoryBusDevice, MemoryBusDevice32be};
 use super::super::super::bus::BusDevice;
 
 use std::io;
@@ -18,6 +18,7 @@ use std::cmp;
 /// To print a char, `set` `addr_write`.
 /// Plus a ton more, because ZPU reasons.
 pub struct SIOTerm {
+    base: mem::Addr,
     addr_read: mem::Addr,
     addr_read_min: mem::Addr,
     addr_read_max: mem::Addr,
@@ -29,22 +30,11 @@ pub struct SIOTerm {
 }
 
 impl SIOTerm {
-    pub fn new(read: mem::Addr, write: mem::Addr) -> SIOTerm {
-        SIOTerm {
-            addr_read: read,
-            addr_read_min: read - 3,
-            addr_read_max: read,
-            addr_write: write,
-            addr_write_min: write - 3,
-            addr_write_max: write,
-            min: cmp::min(read - 3, write - 3),
-            max: cmp::max(read, write),
-        }
-    }
     pub fn new_zpu(base: mem::Addr) -> SIOTerm {
         let addr_read = base +  3 + 4;
         let addr_write = base + 3;
         SIOTerm {
+            base: base,
             addr_read: addr_read,
             addr_read_min: addr_read - 3,
             addr_read_max: addr_read,
@@ -98,7 +88,7 @@ impl mem::MemoryBlock for SIOTerm {
                 },
                 Err(_) => {
                     debug!("SIO: hw fail");
-                    bail!(ErrorKind::HardwareFault(addr, "SIO device failed to read from stdin."))
+                    bail!(ErrorKind::HardwareFault(addr, "SIO device failed to write to stdout."))
                 },
             }
         } else if addr == self.addr_write - 1 {
@@ -129,5 +119,63 @@ impl mem::MemoryBlock for SIOTerm {
     }
 }
 
+impl mem::MemoryBlock32be for SIOTerm {
+    fn set32be(&mut self, addr: mem::Addr, val: u32) -> Result<(), Error> {
+        if addr == self.base {
+            debug!("SIO: got write @ {:#X}: {}", addr, (val & 0xFF) as mem::Byte as char);
+            let mut buf = [0 as mem::Byte, 1];
+            buf[0] = (val & 0xFF) as mem::Byte;
+            return match io::stdout().write(&buf) {
+                Ok(_) => Ok(()),
+                Err(_) => bail!(ErrorKind::HardwareFault(addr, "SIO device failed to write to stdout."))
+            }
+        }
+
+        if addr >= self.addr_write_min && addr <= self.addr_write_max {
+            return Ok(());
+        }
+
+        if addr < self.min {
+            bail!(ErrorKind::TooSmall(addr, self.min));
+        }
+        if addr > self.max {
+            bail!(ErrorKind::TooBig(addr, self.max));
+        }
+
+        bail!(ErrorKind::InvalidAddr(addr))
+    }
+
+    fn get32be(&self, addr: mem::Addr) -> Result<u32, Error> {
+        if addr == self.base { // write addr
+            // TODO: Look up what this does, exactly.
+            return Ok(0x100)
+        }
+        if addr == (self.base + 4) { // read addr
+            debug!("SIO: got read @ {:#X}", addr);
+            let mut buf = [0 as mem::Byte; 1];
+            return match io::stdin().read(&mut buf) {
+                Ok(_) => {
+                    debug!("SIO: read char {}", buf[0] as char);
+                    Ok(buf[0] as u32 | 0x100)
+                },
+                Err(_) => {
+                    debug!("SIO: hw fail");
+                    bail!(ErrorKind::HardwareFault(addr, "SIO device failed to read from stdin."))
+                },
+            }
+        }
+
+        if addr < self.min {
+            bail!(ErrorKind::TooSmall(addr, self.min));
+        }
+        if addr > self.max {
+            bail!(ErrorKind::TooBig(addr, self.max));
+        }
+
+        bail!(ErrorKind::InvalidAddr(addr))
+    }
+}
+
 impl BusDevice for SIOTerm {}
 impl MemoryBusDevice for SIOTerm {}
+impl MemoryBusDevice32be for SIOTerm {}

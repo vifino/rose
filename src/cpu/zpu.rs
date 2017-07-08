@@ -19,7 +19,7 @@ pub struct ZPU {
 
     state: State,
 
-    pub mem: Box<mem::MemoryBlock>,
+    pub mem: Box<mem::MemoryBlock32be>,
     hwemus: bool,
 }
 
@@ -83,14 +83,8 @@ fn agshift32(val: u32, shift: i32) -> u32 {
 impl ZPU {
     /// Set a u32 in memory, big endian.
     fn set32(&mut self, addr: u32, val: u32) -> Result<(), Error> {
-        let vals = super::dis32_be(val);
-        debug!("ZPU: set32:");
-        for i in 0..4 {
-            debug!(" - {:#X}: {:#X}", addr + 1, vals[i as usize]);
-            self.mem.set((addr + i) as usize, vals[i as usize])
-                .chain_err(|| format!("unable to complete set32, failure to set byte {}", i+1))?;
-        }
-        Ok(())
+        debug!("ZPU: set32: {:#X} to {:#X}", addr, val);
+        self.mem.set32be(addr as usize, val).chain_err(|| "in ZPU internal set32")
     }
     /// Set a u16 in memory, big endian.
     fn set16(&mut self, addr: u32, val: u16) -> Result<(), Error> {
@@ -105,14 +99,7 @@ impl ZPU {
 
     /// Get a u32 in memory, big endian.
     fn get32(&self, addr: u32) -> Result<u32, Error> {
-        let mut vals = [0 as Byte; 4];
-        debug!("ZPU: get32:");
-        for i in 0..4 {
-            debug!(" - {:#X}", addr + i);
-            vals[i as usize] = self.mem.get((addr.wrapping_add(i)) as usize)
-                .chain_err(|| format!("unable to complete get32, failure to get byte {}", i+1))?;
-        }
-        let val = super::comb32_be(vals);
+        let val = self.mem.get32be(addr as usize).chain_err(|| "in ZPU internal get32")?;
         debug!("ZPU: get32: val is {:#X}", val);
         Ok(val)
     }
@@ -146,7 +133,7 @@ impl ZPU {
 }
 
 impl ZPU {
-    pub fn new(mem: Box<mem::MemoryBlock>, emus: bool) -> ZPU {
+    pub fn new(mem: Box<mem::MemoryBlock32be>, emus: bool) -> ZPU {
         ZPU {
             pc: 0,
             sp: 0,

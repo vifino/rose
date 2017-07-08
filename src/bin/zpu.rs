@@ -14,7 +14,7 @@ extern crate clap;
 use rose::cpu::*;
 use rose::cpu::zpu::ZPU;
 use rose::bus::BusDevice;
-use rose::bus::memorybus::{MemoryBus, MemoryBusDevice};
+use rose::bus::memorybus::{MemoryBus32be, MemoryBusDevice32be};
 use rose::devices::memorybus::sio::SIOTerm;
 
 use rose::errors::*;
@@ -75,8 +75,8 @@ fn main() {
     }
 
     // Set up bus
-    let devices: Vec<Box<MemoryBusDevice>> = vec![sio, ram];
-    let mut membus = Box::new(MemoryBus::new(devices));
+    let devices: Vec<Box<MemoryBusDevice32be>> = vec![sio, ram];
+    let mut membus = Box::new(MemoryBus32be::new(devices));
     membus.init().unwrap();
 
     // CPU
