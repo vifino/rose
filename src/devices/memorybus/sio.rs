@@ -3,8 +3,8 @@
 extern crate mem;
 
 use self::mem::errors::*;
-use super::super::super::bus::memorybus::{MemoryBusDevice, MemoryBusDevice32be};
-use super::super::super::bus::BusDevice;
+use bus::memorybus::{MemoryBusDevice, MemoryBusDevice32be};
+use bus::BusDevice;
 
 use std::io;
 use std::io::prelude::*;

@@ -6,7 +6,7 @@
 
 extern crate mem;
 
-use super::super::errors::*;
+use errors::*;
 use super::CPUState as State;
 
 // Handy aliases

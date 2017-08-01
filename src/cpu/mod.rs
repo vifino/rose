@@ -5,7 +5,7 @@ pub mod zpu;
 extern crate byteorder;
 use cpu::byteorder::{ByteOrder, BigEndian};
 
-use super::errors::*;
+use errors::*;
 
 // Handy aliases
 type Byte = u8;
