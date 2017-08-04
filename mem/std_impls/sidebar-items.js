@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["MemVector","Simple `Vec`-based memory block. Should suffice basic RAM needs."],["ReadOnly","Read-only wrapper for MemoryBlocks. Raises an error if you try to write to it. Reading simply gets passed through. Useful in cases where you dynamically dispatch between different blocks."]]});

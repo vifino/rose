@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ReadOnly` struct in crate `mem`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ReadOnly">
+
+    <title>mem::std_impls::ReadOnly - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Struct ReadOnly</p><div class="block items"><ul><li><a href="#implementations">Trait Implementations</a></li></ul></div><p class='location'><a href='../index.html'>mem</a>::<wbr><a href='index.html'>std_impls</a></p><script>window.sidebarCurrent = {name: 'ReadOnly', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>mem</a>::<wbr><a href='index.html'>std_impls</a>::<wbr><a class="struct" href=''>ReadOnly</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#9-11' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct ReadOnly&lt;M:&nbsp;<a class="trait" href="../../mem/trait.MemoryBlock.html" title="trait mem::MemoryBlock">MemoryBlock</a>&gt; { /* fields omitted */ }</pre><div class='docblock'><p>Read-only wrapper for MemoryBlocks.
+Raises an error if you try to write to it.
+Reading simply gets passed through.
+Useful in cases where you dynamically dispatch between different blocks.</p>
+</div>
+            <h2 id='implementations' class='section-header'>
+              <a href='#implementations'>Trait Implementations</a>
+            </h2>
+        <h3 class='impl'><span class='in-band'><code>impl&lt;M:&nbsp;<a class="trait" href="../../mem/trait.MemoryBlock.html" title="trait mem::MemoryBlock">MemoryBlock</a>&gt; <a class="trait" href="../../mem/trait.MemoryMiddlewareCreator.html" title="trait mem::MemoryMiddlewareCreator">MemoryMiddlewareCreator</a>&lt;M&gt; for <a class="struct" href="../../mem/std_impls/struct.ReadOnly.html" title="struct mem::std_impls::ReadOnly">ReadOnly</a>&lt;M&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#13-19' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>fn <a href='../../mem/trait.MemoryMiddlewareCreator.html#tymethod.new' class='fnname'>new</a>(mem: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;M&gt;) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#14-18' title='goto source code'>[src]</a></span></h4>
+</div><h3 class='impl'><span class='in-band'><code>impl&lt;M:&nbsp;<a class="trait" href="../../mem/trait.MemoryBlock.html" title="trait mem::MemoryBlock">MemoryBlock</a>&gt; <a class="trait" href="../../mem/trait.MemoryBlock.html" title="trait mem::MemoryBlock">MemoryBlock</a> for <a class="struct" href="../../mem/std_impls/struct.ReadOnly.html" title="struct mem::std_impls::ReadOnly">ReadOnly</a>&lt;M&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#21-33' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.get_size' class="method"><span id='get_size.v' class='invisible'><code>fn <a href='../../mem/trait.MemoryBlock.html#tymethod.get_size' class='fnname'>get_size</a>(&amp;self) -&gt; <a class="type" href="../../mem/type.Addr.html" title="type mem::Addr">Addr</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#22-24' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Get the block&#39;s accessible size. Simply the highest address, NOT the number of addresses. <a href="../../mem/trait.MemoryBlock.html#tymethod.get_size">Read more</a></p>
+</div><h4 id='method.get' class="method"><span id='get.v' class='invisible'><code>fn <a href='../../mem/trait.MemoryBlock.html#tymethod.get' class='fnname'>get</a>(&amp;self, addr: <a class="type" href="../../mem/type.Addr.html" title="type mem::Addr">Addr</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="type" href="../../mem/type.Byte.html" title="type mem::Byte">Byte</a>, <a class="struct" href="../../mem/errors/struct.Error.html" title="struct mem::errors::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#26-28' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Get a byte at address. Returns <code>Ok(X)</code> on success, where X will be the byte. <a href="../../mem/trait.MemoryBlock.html#tymethod.get">Read more</a></p>
+</div><h4 id='method.set' class="method"><span id='set.v' class='invisible'><code>fn <a href='../../mem/trait.MemoryBlock.html#tymethod.set' class='fnname'>set</a>(&amp;mut self, addr: <a class="type" href="../../mem/type.Addr.html" title="type mem::Addr">Addr</a>, _: <a class="type" href="../../mem/type.Byte.html" title="type mem::Byte">Byte</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../mem/errors/struct.Error.html" title="struct mem::errors::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/std_impls/readonly.rs.html#30-32' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Set a byte at address.</p>
+</div><h4 id='method.delete' class="method"><span id='delete.v' class='invisible'><code>fn <a href='../../mem/trait.MemoryBlock.html#method.delete' class='fnname'>delete</a>(&amp;mut self, from: <a class="type" href="../../mem/type.Addr.html" title="type mem::Addr">Addr</a>, to: <a class="type" href="../../mem/type.Addr.html" title="type mem::Addr">Addr</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../mem/errors/struct.Error.html" title="struct mem::errors::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/interface.rs.html#37-45' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Delete data at address. May allow the block to efficiently delete it, marking it as unused. This could allow the block to do wear leveling, for example. <a href="../../mem/trait.MemoryBlock.html#method.delete">Read more</a></p>
+</div><h4 id='method.flush' class="method"><span id='flush.v' class='invisible'><code>fn <a href='../../mem/trait.MemoryBlock.html#method.flush' class='fnname'>flush</a>(&amp;mut self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">()</a>, <a class="struct" href="../../mem/errors/struct.Error.html" title="struct mem::errors::Error">Error</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/mem/interface.rs.html#51-53' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Flush writes out. In case it does any form of caching, calling this method ensures it has written all the data it needs to write. Or, well, it fails otherwise. <a href="../../mem/trait.MemoryBlock.html#method.flush">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "mem";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>
